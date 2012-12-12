@@ -42,19 +42,12 @@ module Sidekiq
         @queue = queue
       end
 
-      def inspect
-        "#<Sidekiq::Throttler::RateLimit #{to_s}>"
+      def count
+        self.class.count(self)
       end
 
-      ##
-      # @return [String]
-      #   The Redis key prefix to be used for storing counters.
-      def to_s
-        @str ||= if key
-          "throttle:#{key}"
-        else
-          "throttle:#{@worker.class.to_s.underscore.gsub('/', ':')}:#{@queue}"
-        end
+      def increment
+        self.class.increment(self)
       end
 
       ##
@@ -80,32 +73,14 @@ module Sidekiq
       end
 
       ##
-      # @return [String, Proc]
+      # @return [Symbol]
       #   The key name used when storing counters for jobs.
       def key
-        @key ||= options['key'].respond_to?(:call) ?
-          options['key'].call(*payload) : options['key']
-      end
-
-      ##
-      # @return [Integer]
-      #   Time span to track in seconds.
-      def bucket_span
-        @bucket_span ||= (options['bucket_span'] || period).to_i
-      end
-
-      ##
-      # @return [Integer]
-      #   Number of seconds each bucket represents.
-      def bucket_interval
-        @bucket_interval ||= (options['bucket_interval'] || 5).to_i
-      end
-
-      ##
-      # @return [Integer]
-      #   Number of buckets to keep.
-      def bucket_count
-        @bucket_count ||= (bucket_span.to_f / bucket_interval.to_f).ceil
+        @key ||= if options['key']
+          options['key'].respond_to?(:call) ? options['key'].call(*payload) : options['key']
+        else
+          "#{@worker.class.to_s.underscore.gsub('/', '_')}_#{@queue}"
+        end.to_sym
       end
 
       ##
@@ -113,7 +88,40 @@ module Sidekiq
       #
       # @return [true, false]
       def can_throttle?
-        [threshold, period, bucket_span, bucket_interval].select(&:zero?).empty?
+        [threshold, period].select(&:zero?).empty?
+      end
+
+      def self.reset!
+        Thread.exclusive do
+          @executions = Hash.new { |hash, key| hash[key] = [] }
+        end
+      end
+
+      private
+
+      def self.count(limiter)
+        Thread.exclusive do
+          prune(limiter)
+          executions[limiter.key].length
+        end
+      end
+
+      def self.increment(limiter)
+        Thread.exclusive do
+          executions[limiter.key] << Time.now
+          prune(limiter)
+        end
+        limiter
+      end
+
+      def self.executions
+        @executions || reset!
+      end
+
+      def self.prune(limiter)
+        executions[limiter.key].select! do |execution|
+          (Time.now - execution) < limiter.period
+        end
       end
 
     end # RateLimit

@@ -37,53 +37,6 @@ describe Sidekiq::Throttler::RateLimit do
     end
   end
 
-  describe '#inspect' do
-
-    it 'returns a string combining #to_s with the class name' do
-      rate_limit.inspect.should eq('#<Sidekiq::Throttler::RateLimit throttle:lolz_worker:meow>')
-    end
-  end
-
-  describe '#to_s' do
-
-    it 'returns a string representing a rate limit key' do
-      rate_limit.to_s.should eq('throttle:lolz_worker:meow')
-    end
-
-    it 'caches the returned string' do
-      rate_limit.to_s.object_id.should eq(rate_limit.to_s.object_id)
-    end
-
-    context 'when a key is configured' do
-
-      context 'when key is a string' do
-
-        let(:worker_class) do
-          CustomKeyWorker
-        end
-
-        it 'returns the key' do
-          rate_limit.to_s.should eq('throttle:winning')
-        end
-      end
-
-      context 'when key is a Proc' do
-
-        let(:worker_class) do
-          ProcWorker
-        end
-
-        let(:payload) do
-          ['baz', 'bar', 'blitz']
-        end
-
-        it 'returns the result of the Proc prefixed by throttle:' do
-          rate_limit.to_s.should eq('throttle:baz:bar:blitz')
-        end
-      end
-    end
-  end
-
   describe '#options' do
 
     it 'retrieves throttle options from the worker' do
@@ -160,8 +113,8 @@ describe Sidekiq::Throttler::RateLimit do
 
     context 'when key is a string' do
 
-      it 'returns the key' do
-        rate_limit.key.should eq('winning')
+      it 'returns the key as a symbol' do
+        rate_limit.key.should eq(:winning)
       end
     end
 
@@ -176,72 +129,8 @@ describe Sidekiq::Throttler::RateLimit do
       end
 
       it 'returns the result of the called Proc' do
-        rate_limit.key.should eq('wat:is:this')
+        rate_limit.key.should eq(:wat_is_this)
       end
-    end
-  end
-
-  describe '#bucket_span' do
-
-    it 'retrieves the bucket_span from #options' do
-      rate_limit.options['bucket_span'] = 75
-      rate_limit.bucket_span.should eq(75)
-    end
-
-    it 'converts the bucket_span to an integer' do
-      rate_limit.options['bucket_span'] = 'blah'
-      rate_limit.bucket_span.should be_a(Integer)
-    end
-
-    it 'caches the returned integer' do
-      rate_limit.bucket_span.object_id.should eq(rate_limit.bucket_span.object_id)
-    end
-
-    it 'defaults to #period' do
-      rate_limit.options['bucket_span'] = nil
-      rate_limit.bucket_span.should eq(rate_limit.period)
-    end
-  end
-
-  describe '#bucket_interval' do
-
-    it 'retrieves the bucket_interval from #options' do
-      rate_limit.options['bucket_interval'] = 29
-      rate_limit.bucket_interval.should eq(29)
-    end
-
-    it 'converts the bucket_interval to an integer' do
-      rate_limit.options['bucket_interval'] = 'sadf'
-      rate_limit.bucket_interval.should be_a(Integer)
-    end
-
-    it 'caches the returned integer' do
-      rate_limit.bucket_interval.object_id.should eq(rate_limit.bucket_interval.object_id)
-    end
-
-    it 'defaults to 5' do
-      rate_limit.options['bucket_interval'] = nil
-      rate_limit.bucket_interval.should eq(5)
-    end
-  end
-
-  describe '#bucket_count' do
-
-    it 'divides the #bucket_span and #bucket_interval and returns the ceiling' do
-      rate_limit.options['bucket_span'] = 500
-      rate_limit.options['bucket_interval'] = 27
-      rate_limit.bucket_count.should eq(19)
-
-      rate_limit.options['bucket_span'] = 345
-      rate_limit.options['bucket_interval'] = 12
-      rate_limit.instance_variable_set(:@bucket_count, nil)
-      rate_limit.instance_variable_set(:@bucket_interval, nil)
-      rate_limit.instance_variable_set(:@bucket_span, nil)
-      rate_limit.bucket_count.should eq(29)
-    end
-
-    it 'caches the returned integer' do
-      rate_limit.bucket_count.object_id.should eq(rate_limit.bucket_count.object_id)
     end
   end
 
@@ -254,7 +143,7 @@ describe Sidekiq::Throttler::RateLimit do
       end
     end
 
-    %w(threshold period bucket_span bucket_interval).each do |method|
+    %w(threshold period).each do |method|
 
       context "when ##{method} is zero" do
 
@@ -262,6 +151,41 @@ describe Sidekiq::Throttler::RateLimit do
           rate_limit.stub(method.to_sym).and_return(0)
           rate_limit.can_throttle?.should be_false
         end
+      end
+    end
+  end
+
+  describe '#count' do
+
+    context 'when no jobs have executed' do
+
+      it 'returns 0' do
+        rate_limit.count.should be_zero
+      end
+    end
+  end
+
+  describe '#increment' do
+
+    it 'increments #count by one' do
+      Timecop.freeze do
+        expect { rate_limit.increment }.to change{ rate_limit.count }.by(1)
+      end
+    end
+
+    context 'when #period has passed' do
+
+      it 'removes old increments' do
+        rate_limit.options['period'] = 5
+
+        Timecop.freeze
+
+        20.times do
+          Timecop.travel(1.second.from_now)
+          rate_limit.increment
+        end
+
+        rate_limit.count.should eq(5)
       end
     end
   end

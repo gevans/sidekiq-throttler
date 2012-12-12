@@ -10,10 +10,9 @@ unless ENV['CI']
 end
 
 require 'rspec'
-require 'mock_redis'
+require 'timecop'
+
 require 'sidekiq/throttler'
-require 'active_support'
-require 'active_support/core_ext'
 
 # Autoload every worker for the test suite that sits in spec/app/workers
 Dir[File.join(WORKERS, '*.rb')].sort.each do |file|
@@ -27,6 +26,10 @@ RSpec.configure do |config|
   # the seed, which is printed after each run.
   #     --seed 1234
   config.order = 'random'
+
+  config.before(:each) do
+    Sidekiq::Throttler::RateLimit.reset!
+  end
 end
 
 # Requires supporting files with custom matchers and macros, etc,
