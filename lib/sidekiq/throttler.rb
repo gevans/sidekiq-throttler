@@ -1,7 +1,11 @@
+require 'sidekiq'
+require 'active_support'
+require 'active_support/core_ext'
+
 require 'sidekiq/throttler/version'
+require 'sidekiq/throttler/rate_limit'
 
 module Sidekiq
-  module Throttler
-    # Your code goes here...
-  end
-end
+  class Throttler
+  end # Throttler
+end # Sidekiq
