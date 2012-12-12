@@ -44,7 +44,7 @@ class MyWorker
 
   sidekiq_options throttle: { threshold: 50, period: 1.hour }
 
-  def perform
+  def perform(user_id)
     # Do some heavy API interactions.
   end
 end
@@ -52,6 +52,16 @@ end
 
 In the above example, when the number of executed jobs for the worker exceeds
 50 in an hour, remaining jobs will be delayed.
+
+If throttling is per-user, for example, you can specify a `Proc` for `key` which
+accepts the arguments passed to your worker's `perform` method:
+
+```ruby
+sidekiq_options throttle: { threshold: 20, period: 1.day, key: ->{ |user_id| user_id } }
+```
+
+In the above example, jobs are throttled for each user when they exceed 20 in a
+day.
 
 ## Contributing
 
