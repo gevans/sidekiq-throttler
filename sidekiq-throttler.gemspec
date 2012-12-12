@@ -17,7 +17,10 @@ Gem::Specification.new do |gem|
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ['lib']
 
+  gem.add_dependency 'activesupport'
   gem.add_dependency 'sidekiq', '>= 2.5', '< 3.0'
+
+  gem.add_development_dependency 'mock_redis'
 
   gem.add_development_dependency 'rake'
   gem.add_development_dependency 'pry'
