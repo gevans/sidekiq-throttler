@@ -114,7 +114,7 @@ describe Sidekiq::Throttler::RateLimit do
     context 'when key is a string' do
 
       it 'returns the key as a symbol' do
-        rate_limit.key.should eq(:winning)
+        rate_limit.key.should eq('winning')
       end
     end
 
@@ -129,7 +129,7 @@ describe Sidekiq::Throttler::RateLimit do
       end
 
       it 'returns the result of the called Proc' do
-        rate_limit.key.should eq(:wat_is_this)
+        rate_limit.key.should eq('wat:is:this')
       end
     end
   end
@@ -151,6 +151,115 @@ describe Sidekiq::Throttler::RateLimit do
           rate_limit.stub(method.to_sym).and_return(0)
           rate_limit.can_throttle?.should be_false
         end
+      end
+    end
+  end
+
+  describe '#exceeded?' do
+
+    context 'when #count is equal to #threshold' do
+
+      it 'returns true' do
+        rate_limit.should_receive(:count).and_return(rate_limit.threshold)
+        rate_limit.should be_exceeded
+      end
+    end
+
+    context 'when #count is greater than #threshold' do
+
+      it 'returns true' do
+        rate_limit.should_receive(:count).and_return(rate_limit.threshold + 1)
+        rate_limit.should be_exceeded
+      end
+    end
+
+    context 'when #count is less than #threshold' do
+
+      it 'returns false' do
+        rate_limit.should_receive(:count).and_return(0)
+        rate_limit.should_not be_exceeded
+      end
+    end
+  end
+
+  describe '#within_bounds?' do
+
+    it 'returns the opposite of #exceeded?' do
+      rate_limit.should_receive(:exceeded?).and_return(true)
+      rate_limit.should_not be_within_bounds
+      rate_limit.should_receive(:exceeded?).and_return(false)
+      rate_limit.should be_within_bounds
+    end
+  end
+
+  describe '#exceeded' do
+
+    it 'accepts a block as a callback' do
+      rate_limit.exceeded { 'rawr' }
+    end
+  end
+
+  describe '#within_bounds' do
+
+    it 'accepts a block as a callback' do
+      rate_limit.within_bounds { 'grr' }
+    end
+  end
+
+  describe '#execute' do
+
+    context 'when rate limit cannot be throttled' do
+
+      before do
+        rate_limit.should_receive(:can_throttle?).and_return(false)
+      end
+
+      it 'calls the within bounds callback' do
+        callback = Proc.new {}
+        callback.should_receive(:call)
+
+        rate_limit.within_bounds(&callback)
+        rate_limit.execute
+      end
+
+      it 'does not increment the counter' do
+        rate_limit.within_bounds {}
+
+        rate_limit.should_not_receive(:increment)
+        rate_limit.execute
+      end
+    end
+
+    context 'when rate limit is exceeded' do
+
+      before do
+        rate_limit.should_receive(:exceeded?).and_return(true)
+      end
+
+      it 'calls the exceeded callback with the configured #period' do
+        callback = Proc.new {}
+        callback.should_receive(:call).with(rate_limit.period)
+
+        rate_limit.exceeded(&callback)
+        rate_limit.execute
+      end
+    end
+
+    context 'when rate limit is within bounds' do
+
+      it 'increments the counter' do
+        rate_limit.within_bounds {}
+
+        rate_limit.should_receive(:increment)
+        rate_limit.execute
+      end
+
+      it 'calls the within bounds callback' do
+        callback = Proc.new {}
+        callback.should_receive(:call)
+
+        rate_limit.within_bounds(&callback)
+        rate_limit.execute
       end
     end
   end

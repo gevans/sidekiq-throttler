@@ -1,14 +1,7 @@
 module Sidekiq
   class Throttler
     ##
-    # Handles the tracking of rate limits. Based on
-    # [ratelimit](https://github.com/ejfinneran/ratelimit/blob/master/lib/ratelimit.rb)
-    # with the addition of using `Thread.exclusive` when accessing Redis.
-    #
-    # Rate limits are stored and incremented in "buckets" which represent a
-    # short period of time (by default, 10 minutes) split into intervals (by
-    # default, 5 seconds). Each bucket expires after a short period of time,
-    # lowering the {#count} on the rate limit.
+    # Handles the tracking of rate limits.
     #
     # TODO: Consider reducing `threshold` and `period` to smooth out job
     # executions so that "24 jobs every 1 hour" becomes "1 job every 2 minutes
@@ -34,6 +27,9 @@ module Sidekiq
       # @param [Sidekiq::Worker] worker
       #   The worker to rate limit.
       #
+      # @param [Array<Object>] payload
+      #   The message payload for the current job.
+      #
       # @param [String] queue
       #   The queue to rate limit.
       def initialize(worker, payload, queue)
@@ -42,10 +38,20 @@ module Sidekiq
         @queue = queue
       end
 
+      ##
+      # Fetch the number of jobs executed.
+      #
+      # @return [Integer]
+      #   The current number of jobs executed.
       def count
         self.class.count(self)
       end
 
+      ##
+      # Increment the count of jobs executed.
+      #
+      # @return [Integer]
+      #   The current number of jobs executed.
       def increment
         self.class.increment(self)
       end
@@ -79,26 +85,80 @@ module Sidekiq
         @key ||= if options['key']
           options['key'].respond_to?(:call) ? options['key'].call(*payload) : options['key']
         else
-          "#{@worker.class.to_s.underscore.gsub('/', '_')}_#{@queue}"
-        end.to_sym
+          "#{@worker.class.to_s.underscore.gsub('/', ':')}:#{@queue}"
+        end
       end
 
       ##
-      # Checks if rate limiting options were correctly specified on the worker.
+      # Check if rate limiting options were correctly specified on the worker.
       #
       # @return [true, false]
       def can_throttle?
         [threshold, period].select(&:zero?).empty?
       end
 
-      def self.reset!
-        Thread.exclusive do
-          @executions = Hash.new { |hash, key| hash[key] = [] }
+      ##
+      # Check if rate limit has exceeded the threshold.
+      #
+      # @return [true, false]
+      def exceeded?
+        count >= threshold
+      end
+
+      ##
+      # Check if rate limit is within the threshold.
+      #
+      # @return [true, false]
+      def within_bounds?
+        !exceeded?
+      end
+
+      ##
+      # Set a callback to be executed when {#execute} is called and the rate
+      # limit has not exceeded the threshold.
+      def within_bounds(&block)
+        @within_bounds = block
+      end
+
+      ##
+      # Set a callback to be executed when {#execute} is called and the rate
+      # limit has exceeded the threshold.
+      #
+      # @yieldparam [Integer] delay
+      #   Delay in seconds to requeue job for.
+      def exceeded(&block)
+        @exceeded = block
+      end
+
+      ##
+      # Executes a callback ({#within_bounds}, or {#exceeded}) depending on the
+      # state of the rate limit.
+      def execute
+        return @within_bounds.call unless can_throttle?
+
+        if exceeded?
+          @exceeded.call(period)
+        else
+          increment
+          @within_bounds.call
         end
+      end
+
+      ##
+      # Reset the tracking of job executions.
+      def self.reset!
+        @executions = Hash.new { |hash, key| hash[key] = [] }
       end
 
       private
 
+      ##
+      # Fetch the number of jobs executed by the provided `RateLimit`.
+      #
+      # @param [RateLimit] limiter
+      #
+      # @return [Integer]
+      #   The current number of jobs executed.
       def self.count(limiter)
         Thread.exclusive do
           prune(limiter)
@@ -106,18 +166,31 @@ module Sidekiq
         end
       end
 
+      ##
+      # Increment the count of jobs executed by the provided `RateLimit`.
+      #
+      # @param [RateLimit] limiter
+      #
+      # @return [Integer]
+      #   The current number of jobs executed.
       def self.increment(limiter)
         Thread.exclusive do
           executions[limiter.key] << Time.now
-          prune(limiter)
         end
-        limiter
+        count(limiter)
       end
 
+      ##
+      # A hash storing job executions as timestamps for each throttled worker.
       def self.executions
         @executions || reset!
       end
 
+      ##
+      # Remove old entries for the provided `RateLimit`.
+      #
+      # @param [RateLimit] limiter
+      #   The rate limit to prune.
       def self.prune(limiter)
         executions[limiter.key].select! do |execution|
           (Time.now - execution) < limiter.period
