@@ -234,11 +234,12 @@ describe Sidekiq::Throttler::RateLimit do
 
       before do
         rate_limit.should_receive(:exceeded?).and_return(true)
+        rate_limit.should_receive(:end_of_period).and_return(:time)
       end
 
       it 'calls the exceeded callback with the configured #period' do
         callback = Proc.new {}
-        callback.should_receive(:call).with(rate_limit.period)
+        callback.should_receive(:call).with(:time)
 
         rate_limit.exceeded(&callback)
         rate_limit.execute
@@ -284,7 +285,8 @@ describe Sidekiq::Throttler::RateLimit do
 
     context 'when #period has passed' do
 
-      it 'removes old increments' do
+      it 'removes old increments when counters not reset at the end of period' do
+        rate_limit.options['reset'] = false
         rate_limit.options['period'] = 5
 
         Timecop.freeze
@@ -295,6 +297,59 @@ describe Sidekiq::Throttler::RateLimit do
         end
 
         rate_limit.count.should eq(5)
+      end
+
+      it 'removes old increments when counteres reset at the end of period' do
+        rate_limit.options['reset'] = true
+        rate_limit.options['period'] = 1.minute
+
+        Timecop.freeze Time.new(2012, 12, 20, 11, 59, 50)
+
+        15.times do
+          Timecop.travel(1.second.from_now)
+          rate_limit.increment
+        end
+
+        rate_limit.count.should eq(6)
+      end
+    end
+  end
+
+  describe "#end_of_period" do
+    before do
+      rate_limit.options['period'] = 1.minute
+    end
+
+    it "defaults parameter to now" do
+      Timecop.freeze
+      rate_limit.end_of_period.should == rate_limit.end_of_period(Time.now)
+    end
+
+    context "when resetting of counters is disabled" do
+      before do
+        rate_limit.options['reset'] = false
+      end
+
+      it "ends at given time plus period length" do
+        time = Time.now
+        rate_limit.end_of_period(time).should == time + 1.minute
+      end
+    end
+
+    context "when resetting of counters is enabled" do
+      before do
+        rate_limit.options['reset'] = true
+      end
+
+      it "ends at the end of nearest period interval" do
+        time = Time.new(2012, 12, 31, 11, 59, 30)
+        rate_limit.end_of_period(time).should == time + 30
+      end
+
+      it "ends day intervals on UTC time" do
+        rate_limit.options['period'] = 1.day
+        time = Time.new(2012, 12, 31, 12, 00, 00, 3.hours)
+        rate_limit.end_of_period(time).should == Time.utc(2013, 01, 01)
       end
     end
   end

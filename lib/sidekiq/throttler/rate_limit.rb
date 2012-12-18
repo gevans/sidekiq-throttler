@@ -79,6 +79,31 @@ module Sidekiq
       end
 
       ##
+      # Reset throttle counter at the beginning of the next period.
+      #
+      # @return [true, false]
+      def reset?
+        @reset ||= options['reset'] || options['reset'].nil?
+      end
+
+      ##
+      # Get end time of a throttling period.
+      #
+      # @param [Time] time
+      #
+      # @return [Time]
+      #   The end time of the throttling period.
+      def end_of_period(time = Time.now)
+        period_end = if reset?
+          period * ((time + period).to_f / period).floor
+        else
+          time + period
+        end
+
+        Time.at period_end
+      end
+
+      ##
       # @return [Symbol]
       #   The key name used when storing counters for jobs.
       def key
@@ -137,7 +162,7 @@ module Sidekiq
         return @within_bounds.call unless can_throttle?
 
         if exceeded?
-          @exceeded.call(period)
+          @exceeded.call(end_of_period)
         else
           increment
           @within_bounds.call
@@ -193,7 +218,7 @@ module Sidekiq
       #   The rate limit to prune.
       def self.prune(limiter)
         executions[limiter.key].select! do |execution|
-          (Time.now - execution) < limiter.period
+          limiter.end_of_period(execution) > Time.now
         end
       end
 
