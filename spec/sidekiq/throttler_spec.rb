@@ -44,7 +44,8 @@ describe Sidekiq::Throttler do
 
       it 'requeues the job with a delay' do
         Sidekiq::Throttler::RateLimit.any_instance.should_receive(:exceeded?).and_return(true)
-        worker.class.should_receive(:perform_in).with(1.minute, *message['args'])
+        Sidekiq::Throttler::RateLimit.any_instance.should_receive(:end_of_period).and_return(:new_time)
+        worker.class.should_receive(:perform_at).with(:new_time, *message['args'])
         throttler.call(worker, message, queue)
       end
     end
