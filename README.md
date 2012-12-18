@@ -66,6 +66,16 @@ sidekiq_options throttle: { threshold: 20, period: 1.day, key: ->{ |user_id| use
 In the above example, jobs are throttled for each user when they exceed 20 in a
 day.
 
+If counters reset at the end of each throttling interval, you can set `reset` parameter to `true`
+(it is 'false' by default). This will reset counter each day at '00:00 UTC':
+
+```ruby
+sidekiq_options throttle: { threshold: 100000, period: 1.day, reset: true }
+```
+
+This will work for any period. For example, `period: 15.minutes` in the above example will reset the counter
+four times per hour at 00:00, 15:00, 30:00, and 45:00.
+
 ## Contributing
 
 1. Fork it
