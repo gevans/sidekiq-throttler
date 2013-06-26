@@ -69,6 +69,20 @@ describe Sidekiq::Throttler::RateLimit do
 
   describe '#threshold' do
 
+    context 'when threshold is a Proc' do
+      let(:worker_class) do
+        ProcThresholdWorker
+      end
+
+      let(:payload) do
+        [1, 500]
+      end
+
+      it 'returns the result of the called Proc' do
+        rate_limit.threshold.should eq(500)
+      end
+    end
+
     it 'retrieves the threshold from #options' do
       rate_limit.options['threshold'] = 26
       rate_limit.threshold.should eq(26)
