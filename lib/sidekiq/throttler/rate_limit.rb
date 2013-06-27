@@ -68,7 +68,7 @@ module Sidekiq
       # @return [Integer]
       #   The number of jobs that are allowed within the `period`.
       def threshold
-        @threshold ||= options['threshold'].to_i
+        @threshold ||= (options['threshold'].respond_to?(:call) ? options['threshold'].call(*payload) : options['threshold']).to_i
       end
 
       ##
