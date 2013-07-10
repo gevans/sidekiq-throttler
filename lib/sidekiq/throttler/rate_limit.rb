@@ -79,7 +79,7 @@ module Sidekiq
       end
 
       ##
-      # @return [Symbol]
+      # @return [String]
       #   The key name used when storing counters for jobs.
       def key
         @key ||= if options['key']
