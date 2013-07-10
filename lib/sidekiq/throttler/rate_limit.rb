@@ -147,7 +147,7 @@ module Sidekiq
       ##
       # Reset the tracking of job executions.
       def self.reset!
-        @executions = Hash.new { |hash, key| hash[key] = [] }
+        @executions = Storage::Memory.new 
       end
 
       private
@@ -162,7 +162,7 @@ module Sidekiq
       def self.count(limiter)
         Thread.exclusive do
           prune(limiter)
-          executions[limiter.key].length
+          executions.count(limiter.key)
         end
       end
 
@@ -175,7 +175,7 @@ module Sidekiq
       #   The current number of jobs executed.
       def self.increment(limiter)
         Thread.exclusive do
-          executions[limiter.key] << Time.now
+          executions.append(limiter.key, Time.now)
         end
         count(limiter)
       end
@@ -192,9 +192,7 @@ module Sidekiq
       # @param [RateLimit] limiter
       #   The rate limit to prune.
       def self.prune(limiter)
-        executions[limiter.key].select! do |execution|
-          (Time.now - execution) < limiter.period
-        end
+        executions.prune(limiter.key, Time.now - limiter.period) 
       end
 
     end # RateLimit

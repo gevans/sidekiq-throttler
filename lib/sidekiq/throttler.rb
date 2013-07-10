@@ -4,6 +4,8 @@ require 'active_support/core_ext/numeric/time'
 require 'sidekiq/throttler/version'
 require 'sidekiq/throttler/rate_limit'
 
+require 'sidekiq/throttler/storage/memory'
+
 module Sidekiq
   ##
   # Sidekiq server middleware. Throttles jobs when they exceed limits specified
