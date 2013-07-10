@@ -22,6 +22,10 @@ describe Sidekiq::Throttler::RateLimit do
     described_class.new(worker, payload, 'meow')
   end
 
+  before(:each) do
+    rate_limit.reset!
+  end
+
   describe '.new' do
 
     it 'initializes with a provided worker' do

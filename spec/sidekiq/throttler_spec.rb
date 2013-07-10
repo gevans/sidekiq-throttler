@@ -3,11 +3,15 @@ require 'spec_helper'
 describe Sidekiq::Throttler do
 
   subject(:throttler) do
-    described_class.new
+    described_class.new(options)
   end
 
   let(:worker) do
     LolzWorker.new
+  end
+
+  let(:options) do
+    { storage: :memory }
   end
 
   let(:message) do
@@ -23,10 +27,9 @@ describe Sidekiq::Throttler do
   describe '#call' do
 
     it 'instantiates a rate limit with the worker, args, and queue' do
-      rate_limit = Sidekiq::Throttler::RateLimit.new(worker, message['args'], queue)
       Sidekiq::Throttler::RateLimit.should_receive(:new).with(
-        worker, message['args'], queue
-      ).and_return(rate_limit)
+        worker, message['args'], queue, options
+      ).and_call_original
 
       throttler.call(worker, message, queue) {}
     end

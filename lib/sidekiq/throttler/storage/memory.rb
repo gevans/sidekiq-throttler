@@ -4,6 +4,8 @@ module Sidekiq
       ##
       # Stores job executions in a Hash of Arrays
       class Memory
+        include Singleton
+
         def initialize
           @hash = Hash.new { |hash, key| hash[key] = [] }
         end
@@ -29,7 +31,7 @@ module Sidekiq
         # @param [Time] cutoff
         #   Oldest allowable time
         def prune(key, cutoff)
-          @hash[key].select! { |time| time > cutoff }
+          @hash[key].reject! { |time| time <= cutoff }
         end
 
         ##
@@ -42,6 +44,10 @@ module Sidekiq
         #   The time to insert
         def append(key, time)
           @hash[key] << time
+        end
+
+        def reset
+          @hash.clear
         end
       end
     end # Storage
