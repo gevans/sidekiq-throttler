@@ -1,6 +1,5 @@
 require 'sidekiq'
-require 'active_support'
-require 'active_support/core_ext'
+require 'active_support/core_ext/numeric/time'
 
 require 'sidekiq/throttler/version'
 require 'sidekiq/throttler/rate_limit'
