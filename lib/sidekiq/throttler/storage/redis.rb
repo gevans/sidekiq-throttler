@@ -2,7 +2,10 @@ module Sidekiq
   class Throttler
     module Storage
       ##
-      # Stores job executions in Redis lists 
+      # Stores job executions in Redis lists.
+      #
+      # Timestamps in each list are ordered with the oldest on the right.
+      # Values are inserted on the left (LPUSH) & pruned from the right (RPOP)
       class Redis
         include Singleton
 
@@ -29,6 +32,11 @@ module Sidekiq
         # @param [Time] cutoff
         #   Oldest allowable time
         def prune(key, cutoff)
+          # Repeatedly pop from the right of the list until we encounter
+          # a value greater than the cutoff.
+          #
+          # We compare popped values to account for race conditions,
+          # pushing them back if they don't match.
           Sidekiq.redis do |conn|
             prune_one = ->(timestamp) {
               if timestamp && timestamp.to_i <= cutoff.to_i
@@ -47,7 +55,7 @@ module Sidekiq
         end
 
         ##
-        # Add a new entry to the hash
+        # Add a new entry to the hash.
         #
         # @param [String] key
         #   The key to append to
@@ -60,6 +68,8 @@ module Sidekiq
           end
         end
 
+        ##
+        # Clear all data from storage.
         def reset
           Sidekiq.redis do |conn|
             conn.keys(namespace_key("*")).each do |key|

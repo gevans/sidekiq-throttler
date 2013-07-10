@@ -158,8 +158,10 @@ module Sidekiq
         executions.reset
       end
 
+      ##
+      # Get the storage backend.
       def executions
-        @executions ||= @storage_class.instance
+        @storage_class.instance
       end
 
       private

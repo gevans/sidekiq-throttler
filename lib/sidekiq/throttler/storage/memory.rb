@@ -2,7 +2,7 @@ module Sidekiq
   class Throttler
     module Storage
       ##
-      # Stores job executions in a Hash of Arrays
+      # Stores job executions in a Hash of Arrays.
       class Memory
         include Singleton
 
@@ -35,7 +35,7 @@ module Sidekiq
         end
 
         ##
-        # Add a new entry to the hash
+        # Add a new entry to the hash.
         #
         # @param [String] key
         #   The key to append to
