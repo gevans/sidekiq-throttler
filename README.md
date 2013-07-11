@@ -8,7 +8,7 @@ limit job execution on a per-worker basis.
 
 ## Compatibility
 
-Sidekiq::Throttler is tested against MRI 1.9.3.
+Sidekiq::Throttler is actively tested against MRI versions 2.0.0 and 1.9.3.
 
 ## Installation
 
