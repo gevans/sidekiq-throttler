@@ -4,11 +4,17 @@ require 'active_support/core_ext/numeric/time'
 require 'sidekiq/throttler/version'
 require 'sidekiq/throttler/rate_limit'
 
+require 'sidekiq/throttler/storage/memory'
+require 'sidekiq/throttler/storage/redis'
+
 module Sidekiq
   ##
   # Sidekiq server middleware. Throttles jobs when they exceed limits specified
   # on the worker. Jobs that exceed the limit are requeued with a delay.
   class Throttler
+    def initialize(options = {})
+      @options = options.dup
+    end
 
     ##
     # Passes the worker, arguments, and queue to {RateLimit} and either yields
@@ -23,7 +29,7 @@ module Sidekiq
     # @param [String] queue
     #   The current queue.
     def call(worker, msg, queue)
-      rate_limit = RateLimit.new(worker, msg['args'], queue)
+      rate_limit = RateLimit.new(worker, msg['args'], queue, @options)
 
       rate_limit.within_bounds do
         yield

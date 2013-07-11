@@ -32,10 +32,18 @@ module Sidekiq
       #
       # @param [String] queue
       #   The queue to rate limit.
-      def initialize(worker, payload, queue)
+      #
+      # @option [Symbol] :storage
+      #   Either :memory or :redis, the storage backend to use
+      def initialize(worker, payload, queue, options = {})
         @worker = worker
         @payload = payload
         @queue = queue
+
+        unless @storage_class = lookup_storage(options.fetch(:storage, :memory))
+          raise ArgumentError,
+            "Unrecognized storage backend: #{options[:storage].inspect}"
+        end
       end
 
       ##
@@ -79,7 +87,7 @@ module Sidekiq
       end
 
       ##
-      # @return [Symbol]
+      # @return [String]
       #   The key name used when storing counters for jobs.
       def key
         @key ||= if options['key']
@@ -146,8 +154,14 @@ module Sidekiq
 
       ##
       # Reset the tracking of job executions.
-      def self.reset!
-        @executions = Hash.new { |hash, key| hash[key] = [] }
+      def reset!
+        executions.reset
+      end
+
+      ##
+      # Get the storage backend.
+      def executions
+        @storage_class.instance
       end
 
       private
@@ -162,7 +176,7 @@ module Sidekiq
       def self.count(limiter)
         Thread.exclusive do
           prune(limiter)
-          executions[limiter.key].length
+          limiter.executions.count(limiter.key)
         end
       end
 
@@ -175,15 +189,9 @@ module Sidekiq
       #   The current number of jobs executed.
       def self.increment(limiter)
         Thread.exclusive do
-          executions[limiter.key] << Time.now
+          limiter.executions.append(limiter.key, Time.now)
         end
         count(limiter)
-      end
-
-      ##
-      # A hash storing job executions as timestamps for each throttled worker.
-      def self.executions
-        @executions || reset!
       end
 
       ##
@@ -192,11 +200,20 @@ module Sidekiq
       # @param [RateLimit] limiter
       #   The rate limit to prune.
       def self.prune(limiter)
-        executions[limiter.key].select! do |execution|
-          (Time.now - execution) < limiter.period
-        end
+        limiter.executions.prune(limiter.key, Time.now - limiter.period)
       end
 
+      ##
+      # Lookup storage class for a given options key
+      #
+      # @param [Symbol] key
+      #   The options key, :memory or :redis
+      #
+      # @return [Class]
+      #   The storage backend class, or nil if the key is not found
+      def lookup_storage(key)
+        { memory: Storage::Memory, redis: Storage::Redis }[key]
+      end
     end # RateLimit
   end # Throttler
 end # Sidekiq
