@@ -37,6 +37,18 @@ Sidekiq.configure_server do |config|
 end
 ```
 
+Sidekiq::Throttler defaults to in-memory storage of job execution times. If
+you have multiple worker processes, or frequently restart your processes, this
+will be unreliable. Instead, specify the `:redis` storage option:
+
+```ruby
+Sidekiq.configure_server do |config|
+  config.server_middleware do |chain|
+    chain.add Sidekiq::Throttler, storage: :redis
+  end
+end
+```
+
 ## Usage
 
 In a worker, specify a threshold (maximum jobs) and period for throttling:
