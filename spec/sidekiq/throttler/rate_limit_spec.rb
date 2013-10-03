@@ -1,5 +1,29 @@
 require 'spec_helper'
 
+shared_examples "incrementing" do
+  it 'increments #count by one' do
+    Timecop.freeze do
+      expect { rate_limit.increment }.to change{ rate_limit.count }.by(1)
+    end
+  end
+
+  context 'when #period has passed' do
+
+    it 'removes old increments' do
+      rate_limit.options['period'] = 5
+
+      Timecop.freeze
+
+      20.times do
+        Timecop.travel(1.second.from_now)
+        rate_limit.increment
+      end
+
+      rate_limit.count.should eq(5)
+    end
+  end
+end
+
 describe Sidekiq::Throttler::RateLimit do
 
   let(:worker_class) do
@@ -22,6 +46,10 @@ describe Sidekiq::Throttler::RateLimit do
     described_class.new(worker, payload, 'meow')
   end
 
+  before(:each) do
+    rate_limit.reset!
+  end
+
   describe '.new' do
 
     it 'initializes with a provided worker' do
@@ -34,6 +62,14 @@ describe Sidekiq::Throttler::RateLimit do
 
     it 'initializes with a provided queue' do
       rate_limit.queue.should eq('meow')
+    end
+
+    context "with an invalid storage backend" do
+      it "raises an ArgumentError" do
+        expect {
+          described_class.new(worker, payload, 'meow', storage: :blarg)
+        }.to raise_error(ArgumentError)
+      end
     end
   end
 
@@ -289,27 +325,14 @@ describe Sidekiq::Throttler::RateLimit do
   end
 
   describe '#increment' do
+    include_examples "incrementing"
+  end
 
-    it 'increments #count by one' do
-      Timecop.freeze do
-        expect { rate_limit.increment }.to change{ rate_limit.count }.by(1)
-      end
+  context "with a :redis storage backend" do
+    subject(:rate_limit) do
+      described_class.new(worker, payload, 'meow', storage: :redis)
     end
 
-    context 'when #period has passed' do
-
-      it 'removes old increments' do
-        rate_limit.options['period'] = 5
-
-        Timecop.freeze
-
-        20.times do
-          Timecop.travel(1.second.from_now)
-          rate_limit.increment
-        end
-
-        rate_limit.count.should eq(5)
-      end
-    end
+    include_examples "incrementing"
   end
 end

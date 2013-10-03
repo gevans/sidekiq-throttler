@@ -28,10 +28,6 @@ RSpec.configure do |config|
   # the seed, which is printed after each run.
   #     --seed 1234
   config.order = 'random'
-
-  config.before(:each) do
-    Sidekiq::Throttler::RateLimit.reset!
-  end
 end
 
 # Requires supporting files with custom matchers and macros, etc,
