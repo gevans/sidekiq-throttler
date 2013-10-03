@@ -1,3 +1,15 @@
+## 0.3.0 (October 3, 2013)
+
+* Redis is supported as a storage backend for persistence of job execution
+  counters across multiple Sidekiq processes.
+
+  *Louis Simoneau*
+
+* Only Active Support's `Time` extensions are required. Fixes compatibility with
+  Rails 4.
+
+  *Louis Simoneau*
+
 ## 0.2.0 (June 29, 2013)
 
 * Now supports using a Proc for `:threshold` argument, similar to how the
