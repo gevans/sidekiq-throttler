@@ -72,7 +72,7 @@ If throttling is per-user, for example, you can specify a `Proc` for `key` which
 accepts the arguments passed to your worker's `perform` method:
 
 ```ruby
-sidekiq_options throttle: { threshold: 20, period: 1.day, key: ->{ |user_id| user_id } }
+sidekiq_options throttle: { threshold: 20, period: 1.day, key: ->(user_id){ user_id } }
 ```
 
 In the above example, jobs are throttled for each user when they exceed 20 in a
@@ -82,7 +82,7 @@ Thresholds can be configured based on the arguments passed to your worker's `per
 similar to how the `key` option works:
 
 ```ruby
-sidekiq_options throttle: { threshold: -> {|user_id, rate_limit| rate_limit }, period: 1.hour, key: ->{ |user_id, rate_limit| user_id } }
+sidekiq_options throttle: { threshold: ->(user_id, rate_limit) { rate_limit }, period: 1.hour, key: ->(user_id, rate_limit){ user_id } }
 ```
 
 In the above example, jobs are throttled for each user when they exceed the rate limit provided in the message. This is useful in cases where each user may have a different rate limit (ex: interacting with external APIs)
