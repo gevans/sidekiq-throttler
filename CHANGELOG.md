@@ -1,3 +1,9 @@
+## 0.3.1 (November 5, 2013)
+
+* `Singleton` is explicitly required, fixing a `NameError`.
+
+  *Bruno Pinto*
+
 ## 0.3.0 (October 3, 2013)
 
 * Redis is supported as a storage backend for persistence of job execution
