@@ -95,7 +95,7 @@ module Sidekiq
         else
           "#{@worker.class.to_s.underscore.gsub('/', ':')}:#{@queue}"
         end
-      endz
+      end
 
       ##
       # Check if rate limiting options were correctly specified on the worker.
