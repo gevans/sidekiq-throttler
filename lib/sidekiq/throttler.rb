@@ -30,6 +30,7 @@ module Sidekiq
     # @param [String] queue
     #   The current queue.
     def call(worker, msg, queue)
+
       rate_limit = RateLimit.new(worker, msg['args'], queue, @options)
 
       rate_limit.within_bounds do

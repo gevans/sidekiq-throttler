@@ -95,7 +95,7 @@ module Sidekiq
         else
           "#{@worker.class.to_s.underscore.gsub('/', ':')}:#{@queue}"
         end
-      end
+      endz
 
       ##
       # Check if rate limiting options were correctly specified on the worker.
@@ -135,7 +135,11 @@ module Sidekiq
       # @yieldparam [Integer] delay
       #   Delay in seconds to requeue job for.
       def exceeded(&block)
-        @exceeded = block
+        if options['exceeded']
+          @exceeded = options['exceeded']
+        else
+          @exceeded = block
+        end
       end
 
       ##
@@ -145,7 +149,13 @@ module Sidekiq
         return @within_bounds.call unless can_throttle?
 
         if exceeded?
-          @exceeded.call(period)
+          # check to see if we've set exceeded in a proc so we can instance_exec
+          # giving accesss to members to outside procs.
+          if options['exceeded']
+            self.instance_exec period, &@exceeded
+          else
+            @exceeded.call(period)
+          end
         else
           increment
           @within_bounds.call
