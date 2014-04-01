@@ -55,7 +55,7 @@ describe Sidekiq::Throttler do
         throttler.call(worker, message, queue)
       end
 
-      it 'properly performs the behavior specificed in when_exceeded option' do
+      it 'properly performs the behavior specificed in exceeded option' do
         # pending("...")
         Sidekiq::Throttler::RateLimit.any_instance.should_receive(:exceeded?).and_return(true)
         worker2.class.should_receive(:perform_async).with(*message['args'])
