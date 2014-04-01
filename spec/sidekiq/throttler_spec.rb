@@ -16,7 +16,7 @@ describe Sidekiq::Throttler do
 
   let(:message) do
     {
-      args: 'Clint Eastwood'
+      'args' => 'Clint Eastwood'
     }
   end
 
