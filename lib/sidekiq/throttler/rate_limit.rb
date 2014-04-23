@@ -83,7 +83,7 @@ module Sidekiq
       # @return [Float]
       #   The number of seconds in the rate limit period.
       def period
-        @period ||= options['period'].to_f
+        @period ||= (options['period'].respond_to?(:call) ? options['period'].call(*payload) : options['period']).to_f
       end
 
       ##
