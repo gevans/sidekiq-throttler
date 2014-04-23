@@ -12,7 +12,6 @@ class LolzWorker2
       worker.class.perform_async(payload)
       }
     }
-  
 
   def perform(name)
     puts "LolzWorker2!!!"

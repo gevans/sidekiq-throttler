@@ -15,7 +15,6 @@ module Sidekiq
   class Throttler
     def initialize(options = {})
       @options = options.dup
-
     end
 
     ##
@@ -31,7 +30,6 @@ module Sidekiq
     # @param [String] queue
     #   The current queue.
     def call(worker, msg, queue)
-
       rate_limit = RateLimit.new(worker, msg['args'], queue, @options)
 
       rate_limit.within_bounds do
@@ -50,7 +48,8 @@ module Sidekiq
       # 4: the queue the job was pulled from
       # NB: The exceeded behavior passed *MUST* be a proc if you are using less
       # then 4 arguments. Because the rate limiter itself always passes four
-      # arguments it doesn't work with a lambda. 
+      # arguments it doesn't work with a lambda.
+       
       worker_options = (worker.class.get_sidekiq_options['throttle'] || {}).stringify_keys
 
       if worker_options['exceeded'].nil? || worker_options['exceeded'] == :retry
