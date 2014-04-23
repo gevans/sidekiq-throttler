@@ -135,11 +135,7 @@ module Sidekiq
       # @yieldparam [Integer] delay
       #   Delay in seconds to requeue job for.
       def exceeded(&block)
-        if options['exceeded']
-          @exceeded = options['exceeded']
-        else
-          @exceeded = block
-        end
+        @exceeded = block
       end
 
       ##
@@ -149,13 +145,8 @@ module Sidekiq
         return @within_bounds.call unless can_throttle?
 
         if exceeded?
-          # check to see if we've set exceeded in a proc so we can instance_exec
-          # giving accesss to members to outside procs.
-          if options['exceeded']
-            self.instance_exec period, &@exceeded
-          else
-            @exceeded.call(period)
-          end
+          # passing a bunch of variables for use in the exceeded behavior
+          @exceeded.call(period, worker, payload, queue)
         else
           increment
           @within_bounds.call

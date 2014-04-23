@@ -288,7 +288,7 @@ describe Sidekiq::Throttler::RateLimit do
 
       it 'calls the exceeded callback with the configured #period' do
         callback = Proc.new {}
-        callback.should_receive(:call).with(rate_limit.period)
+        callback.should_receive(:call).with(rate_limit.period, worker, payload, queue)
 
         rate_limit.exceeded(&callback)
         rate_limit.execute

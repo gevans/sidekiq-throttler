@@ -15,6 +15,7 @@ module Sidekiq
   class Throttler
     def initialize(options = {})
       @options = options.dup
+
     end
 
     ##
@@ -37,8 +38,27 @@ module Sidekiq
         yield
       end
 
-      rate_limit.exceeded do |delay|
-        worker.class.perform_in(delay, *msg['args'])
+      # We now allow for explicitly setting the exceeded behavior.
+      # By default (or with a :retry value), the exceeded behavior follows the
+      # previous behavior and retries the job.
+      #
+      # Otherwise, it attempts to use the behavior specified in the class options
+      # The specified behavior should be a a proc that takes up to 4 arguments:
+      # 1: the period of the rate limiter
+      # 2: the worker for the job
+      # 3: the message payload
+      # 4: the queue the job was pulled from
+      # NB: The exceeded behavior passed *MUST* be a proc if you are using less
+      # then 4 arguments. Because the rate limiter itself always passes four
+      # arguments it doesn't work with a lambda. 
+      worker_options = (worker.class.get_sidekiq_options['throttle'] || {}).stringify_keys
+
+      if worker_options['exceeded'].nil? || worker_options['exceeded'] == :retry
+        rate_limit.exceeded do |delay|
+          worker.class.perform_in(delay, *msg['args'])
+        end
+      else
+        rate_limit.exceeded &worker_options['exceeded']
       end
 
       rate_limit.execute
