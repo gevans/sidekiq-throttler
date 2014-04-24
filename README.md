@@ -2,6 +2,7 @@
 
 [![Build Status](https://secure.travis-ci.org/gevans/sidekiq-throttler.png)](http://travis-ci.org/gevans/sidekiq-throttler)
 [![Dependency Status](https://gemnasium.com/gevans/sidekiq-throttler.png)](https://gemnasium.com/gevans/sidekiq-throttler)
+[![Gem Version](https://badge.fury.io/rb/sidekiq-throttler.svg)](http://badge.fury.io/rb/sidekiq-throttler)
 
 Sidekiq::Throttler is a middleware for Sidekiq that adds the ability to rate
 limit job execution on a per-worker basis.
