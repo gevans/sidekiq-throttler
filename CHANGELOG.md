@@ -1,8 +1,17 @@
-## 0.4.0 (*Unreleased*)
+## 0.4.0 (April 24, 2014)
 
 * Now supports using a Proc for `:period` option.
 
   *Kainage*
+
+* Fix for throttler spec that was using symbol keys but the testing with
+  string keys.
+
+  *worst*
+
+* Dependency lock is loosened for compatibility with Sidekiq 3.0.
+
+  *Gabe Evans*
 
 ## 0.3.1 (November 5, 2013)
 
