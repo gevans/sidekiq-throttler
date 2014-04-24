@@ -14,7 +14,9 @@ Sidekiq::Throttler is actively tested against MRI versions 2.0.0 and 1.9.3.
 
 Add this line to your application's Gemfile:
 
-    gem 'sidekiq-throttler'
+```ruby
+gem 'sidekiq-throttler'
+```
 
 And then execute:
 
