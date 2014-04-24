@@ -1,3 +1,9 @@
+## 0.4.0 (*Unreleased*)
+
+* Now supports using a Proc for `:period` option.
+
+  *Kainage*
+
 ## 0.3.1 (November 5, 2013)
 
 * `Singleton` is explicitly required, fixing a `NameError`.
