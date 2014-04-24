@@ -136,6 +136,20 @@ describe Sidekiq::Throttler::RateLimit do
 
   describe '#period' do
 
+    context 'when period is a Proc' do
+      let(:worker_class) do
+        ProcPeriodWorker
+      end
+
+      let(:payload) do
+        [1, 1.minute]
+      end
+
+      it 'returns the result of the called Proc' do
+        rate_limit.period.should eq(60)
+      end
+    end
+
     it 'retrieves the period from #options' do
       rate_limit.options['period'] = 10.0
       rate_limit.period.should eq(10.0)
