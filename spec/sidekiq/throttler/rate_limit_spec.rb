@@ -203,7 +203,7 @@ describe Sidekiq::Throttler::RateLimit do
     context 'when options are correctly specified' do
 
       it 'returns true' do
-        rate_limit.can_throttle?.should be_true
+        rate_limit.can_throttle?.should be_truthy
       end
     end
 
@@ -213,7 +213,7 @@ describe Sidekiq::Throttler::RateLimit do
 
         it 'returns false' do
           rate_limit.stub(method.to_sym).and_return(0)
-          rate_limit.can_throttle?.should be_false
+          rate_limit.can_throttle?.should be_falsey
         end
       end
     end
