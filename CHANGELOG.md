@@ -1,3 +1,18 @@
+## 0.4.1 (June 18, 2014)
+
+* Dependency lock is loosened further for compatibility with Sidekiq 3.x.
+
+  *Gabe Evans*
+
+* Appraisal is used for continous integration with Sidekiq 2.x and Sidekiq's
+  master branch.
+
+  *Gabe Evans*
+
+* Specs now use RSpec 3 and the `expect()` syntax.
+
+  *Gabe Evans*
+
 ## 0.4.0 (April 24, 2014)
 
 * Now supports using a Proc for `:period` option.
