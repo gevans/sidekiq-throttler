@@ -21,7 +21,6 @@ Gem::Specification.new do |gem|
   gem.add_dependency 'activesupport'
   gem.add_dependency 'sidekiq', '>= 2.5', '< 4.0'
 
-  gem.add_development_dependency 'appraisal', '~> 0.5'
   gem.add_development_dependency 'growl'
   gem.add_development_dependency 'guard'
   gem.add_development_dependency 'guard-bundler'

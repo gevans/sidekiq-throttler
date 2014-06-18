@@ -13,3 +13,6 @@ notifications:
   email:
     recipients:
       - gabe@ga.be
+gemfile:
+  - gemfiles/sidekiq_2.gemfile
+  - gemfiles/sidekiq_master.gemfile
