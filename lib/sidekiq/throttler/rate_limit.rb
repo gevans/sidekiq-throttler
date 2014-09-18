@@ -113,6 +113,15 @@ module Sidekiq
         count >= threshold
       end
 
+      # Check if the same worker with args is already in the queue
+      def scheduled?
+        if options['scheduled_unique']
+          Sidekiq::ScheduledSet.new.select{|job| job.klass == worker.class.to_s && job.args == payload}.any?
+        else
+          false
+        end
+      end
+
       ##
       # Check if rate limit is within the threshold.
       #

@@ -37,7 +37,9 @@ module Sidekiq
       end
 
       rate_limit.exceeded do |delay|
-        worker.class.perform_in(delay, *msg['args'])
+        unless rate_limit.scheduled?
+          worker.class.perform_in(delay, *msg['args'])
+        end
       end
 
       rate_limit.execute
