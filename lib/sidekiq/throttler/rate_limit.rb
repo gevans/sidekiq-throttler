@@ -121,18 +121,7 @@ module Sidekiq
       # Check if the same worker with args is already in the queue
       def scheduled?
         if options['scheduled_unique']
-          same_jobs = Sidekiq::ScheduledSet.new.select do |job|
-            if job.klass == worker.class.to_s
-              if options['unique_args']
-                job.args == payload
-              else
-                true
-              end
-            else
-              false
-            end
-          end
-          same_jobs.any?
+          Sidekiq::ScheduledSet.new.select{ |job| job.klass == worker.class.to_s &&  job.args == payload}.any?
         else
           false
         end
