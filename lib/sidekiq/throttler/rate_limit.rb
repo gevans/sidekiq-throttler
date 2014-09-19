@@ -93,7 +93,12 @@ module Sidekiq
         @key ||= if options['key']
           options['key'].respond_to?(:call) ? options['key'].call(*payload) : options['key']
         else
-          "#{@worker.class.to_s.underscore.gsub('/', ':')}:#{@queue}"
+          base_key = "#{@worker.class.to_s.underscore.gsub('/', ':')}:#{@queue}"
+          if options['unique_args']
+            "#{base_key}:#{payload.join('/')}"
+          else
+            base_key
+          end
         end
       end
 
@@ -116,7 +121,18 @@ module Sidekiq
       # Check if the same worker with args is already in the queue
       def scheduled?
         if options['scheduled_unique']
-          Sidekiq::ScheduledSet.new.select{|job| job.klass == worker.class.to_s && job.args == payload}.any?
+          same_jobs = Sidekiq::ScheduledSet.new.select do |job|
+            if job.klass == worker.class.to_s
+              if options['unique_args']
+                job.args == payload
+              else
+                true
+              end
+            else
+              false
+            end
+          end
+          same_jobs.any?
         else
           false
         end
