@@ -143,6 +143,20 @@ minutes. However, on Tuesdays limit jobs to 9 thousand every *15 minutes*:
 sidekiq_options throttle: { threshold: 9000, period: ->{ Date.today.tuesday? ? 15.minutes : 10.minutes } }
 ```
 
+### Do Not Reschedule Throttled Jobs
+
+By default, if a job is throttled, it will be rescheduled and tried again after a delay equal to the value of the worker's `period` setting. In some cases, you may not want throttled jobs to be rescheduled at all. In this case, you can set `reschedule: false` in the worker's options hash, like so:
+
+```ruby
+class NoRescheduleWorker
+  include Sidekiq::Worker
+
+  sidekiq_options throttle: { threshold: 10, period: 1.minute, reschedule: false }
+
+  def perform; end
+end
+```
+
 ## Contributing
 
 1. Fork it
