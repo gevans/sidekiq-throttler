@@ -51,5 +51,34 @@ describe Sidekiq::Throttler do
         throttler.call(worker, message, queue)
       end
     end
+
+    describe 'sidekiq pro batches' do
+      class Sidekiq::Batch
+        def initialize(bid)
+          @bid = bid
+        end
+
+        def jobs(*)
+          yield
+        end
+      end
+
+      let(:message) do
+        { 
+          'args' => 'Hello World!',
+          'bid'  => '12345'
+        }
+      end
+
+      let(:batch) { Sidekiq::Batch.new(message['bid']) }
+
+      it 'requeues the job within same batch id' do
+        expect_any_instance_of(Sidekiq::Throttler::RateLimit).to receive(:exceeded?).and_return(true)
+        expect(Sidekiq::Batch).to receive(:new).with(message['bid']).and_return(batch)
+        expect(batch).to receive(:jobs).and_yield
+        expect(worker.class).to receive(:perform_in).with(1.minute, *message['args'])
+        throttler.call(worker, message, queue)
+      end
+    end
   end
 end
