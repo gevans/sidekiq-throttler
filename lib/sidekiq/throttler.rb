@@ -4,6 +4,7 @@ require 'singleton'
 
 require 'sidekiq/throttler/version'
 require 'sidekiq/throttler/rate_limit'
+require 'sidekiq/throttler/try_again'
 
 require 'sidekiq/throttler/storage/memory'
 require 'sidekiq/throttler/storage/redis'
@@ -37,7 +38,7 @@ module Sidekiq
       end
 
       rate_limit.exceeded do |delay|
-        worker.class.perform_in(delay, *msg['args'])
+        TryAgain.reschedule(worker, msg['args'], delay)
       end
 
       rate_limit.execute

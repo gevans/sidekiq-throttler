@@ -43,11 +43,20 @@ describe Sidekiq::Throttler do
       throttler.call(worker, message, queue)
     end
 
-    context 'when rate limit is exceeded' do
-
+    context 'when rate limit is exceeded and the reschedule option is not specified in the worker' do
       it 'requeues the job with a delay' do
         expect_any_instance_of(Sidekiq::Throttler::RateLimit).to receive(:exceeded?).and_return(true)
         expect(worker.class).to receive(:perform_in).with(1.minute, *message['args'])
+        throttler.call(worker, message, queue)
+      end
+    end
+
+    context 'when rate limit is exceeded and the reschedule option is set to false in the worker' do
+      let(:worker) { NoRescheduleWorker.new }
+
+      it 'does not requeue the job' do
+        expect_any_instance_of(Sidekiq::Throttler::RateLimit).to receive(:exceeded?).and_return(true)
+        expect(worker.class).not_to receive(:perform_in)
         throttler.call(worker, message, queue)
       end
     end
