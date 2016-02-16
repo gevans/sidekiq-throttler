@@ -6,9 +6,6 @@ rvm:
   - 2.2
   - 2.1
   - 2.0.0
-branches:
-  only:
-    - master
 notifications:
   email:
     recipients:
