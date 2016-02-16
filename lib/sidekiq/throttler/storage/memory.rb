@@ -13,7 +13,7 @@ module Sidekiq
         ##
         # Number of executions for +key+.
         #
-        # @param [String]
+        # @param [String] key
         #   Key to fetch count for
         #
         # @return [Fixnum]
@@ -40,7 +40,7 @@ module Sidekiq
         # @param [String] key
         #   The key to append to
         #
-        # @param [Time]
+        # @param [Time] time
         #   The time to insert
         def append(key, time)
           @hash[key] << time
