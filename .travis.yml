@@ -11,7 +11,9 @@ notifications:
     recipients:
       - gabe@ga.be
 gemfile:
+  - gemfiles/sidekiq_head.gemfile
+  - gemfiles/sidekiq_4.gemfile
+  - gemfiles/sidekiq_3.gemfile
   - gemfiles/sidekiq_2.gemfile
-  - gemfiles/sidekiq_master.gemfile
 before_install:
   - gem update bundler
