@@ -37,11 +37,27 @@ module Sidekiq
       end
 
       rate_limit.exceeded do |delay|
-        worker.class.perform_in(delay, *msg['args'])
+        within_batch(msg) do |args|
+          worker.class.perform_in(delay, args)
+        end
       end
 
       rate_limit.execute
     end
 
+    private
+
+    # Support Siekiq::Pro batches
+    # Requeue within a batch if bid is present
+    def within_batch(msg)
+      args, bid = msg['args'], msg['bid']
+      
+      if bid && defined?(Sidekiq::Batch)
+        batch = Sidekiq::Batch.new(bid)
+        batch.jobs { yield args } 
+      else
+        yield args
+      end
+    end
   end # Throttler
 end # Sidekiq
