@@ -10,6 +10,10 @@ describe Sidekiq::Throttler do
     LolzWorker.new
   end
 
+  let(:worker2) do
+    LolzWorker2.new
+  end
+
   let(:options) do
     { storage: :memory }
   end
@@ -49,6 +53,12 @@ describe Sidekiq::Throttler do
         expect_any_instance_of(Sidekiq::Throttler::RateLimit).to receive(:exceeded?).and_return(true)
         expect(worker.class).to receive(:perform_in).with(1.minute, *message['args'])
         throttler.call(worker, message, queue)
+      end
+
+      it 'properly performs the behavior specificed in exceeded option' do
+        Sidekiq::Throttler::RateLimit.any_instance.should_receive(:exceeded?).and_return(true)
+        worker2.class.should_receive(:perform_async).with(*message['args'])
+        throttler.call(worker2, message, queue)
       end
     end
   end

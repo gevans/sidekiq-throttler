@@ -149,7 +149,8 @@ module Sidekiq
         return @within_bounds.call unless can_throttle?
 
         if exceeded?
-          @exceeded.call(period)
+          # passing a bunch of variables for use in the exceeded behavior
+          @exceeded.call(period, worker, payload, queue)
         else
           increment
           @within_bounds.call
