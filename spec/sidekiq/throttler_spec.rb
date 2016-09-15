@@ -31,7 +31,7 @@ describe Sidekiq::Throttler do
   describe '#call' do
 
     it 'instantiates a rate limit with the worker, args, and queue' do
-      Sidekiq::Throttler::RateLimit.should_receive(:new).with(
+      expect(Sidekiq::Throttler::RateLimit).to receive(:new).with(
         worker, message['args'], queue, options
       ).and_call_original
 
@@ -43,15 +43,15 @@ describe Sidekiq::Throttler do
     end
 
     it 'calls RateLimit#execute' do
-      Sidekiq::Throttler::RateLimit.any_instance.should_receive(:execute)
+      expect_any_instance_of(Sidekiq::Throttler::RateLimit).to receive(:execute)
       throttler.call(worker, message, queue)
     end
 
     context 'when rate limit is exceeded' do
 
       it 'requeues the job with a delay' do
-        Sidekiq::Throttler::RateLimit.any_instance.should_receive(:exceeded?).and_return(true)
-        worker.class.should_receive(:perform_in).with(1.minute, *message['args'])
+        expect_any_instance_of(Sidekiq::Throttler::RateLimit).to receive(:exceeded?).and_return(true)
+        expect(worker.class).to receive(:perform_in).with(1.minute, *message['args'])
         throttler.call(worker, message, queue)
       end
 

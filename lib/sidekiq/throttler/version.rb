@@ -1,5 +1,5 @@
 module Sidekiq
   class Throttler
-    VERSION = '0.3.1'
+    VERSION = '0.5.1'.freeze
   end
 end

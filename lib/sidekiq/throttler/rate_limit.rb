@@ -1,3 +1,5 @@
+require 'thread'
+
 module Sidekiq
   class Throttler
     ##
@@ -7,6 +9,8 @@ module Sidekiq
     # executions so that "24 jobs every 1 hour" becomes "1 job every 2 minutes
     # and 30 seconds"
     class RateLimit
+
+      LOCK = Mutex.new
 
       ##
       # @return [Sidekiq::Worker]
@@ -83,7 +87,7 @@ module Sidekiq
       # @return [Float]
       #   The number of seconds in the rate limit period.
       def period
-        @period ||= options['period'].to_f
+        @period ||= (options['period'].respond_to?(:call) ? options['period'].call(*payload) : options['period']).to_f
       end
 
       ##
@@ -175,7 +179,7 @@ module Sidekiq
       # @return [Integer]
       #   The current number of jobs executed.
       def self.count(limiter)
-        Thread.exclusive do
+        LOCK.synchronize do
           prune(limiter)
           limiter.executions.count(limiter.key)
         end
@@ -189,7 +193,7 @@ module Sidekiq
       # @return [Integer]
       #   The current number of jobs executed.
       def self.increment(limiter)
-        Thread.exclusive do
+        LOCK.synchronize do
           limiter.executions.append(limiter.key, Time.now)
         end
         count(limiter)

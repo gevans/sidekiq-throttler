@@ -2,14 +2,18 @@ language: ruby
 services:
   - redis-server
 rvm:
-  - 2.1.1
-  - 2.1.0
+  - 2.3.0
+  - 2.2
+  - 2.1
   - 2.0.0
-  - 1.9.3
-branches:
-  only:
-    - master
 notifications:
   email:
     recipients:
       - gabe@ga.be
+gemfile:
+  - gemfiles/sidekiq_head.gemfile
+  - gemfiles/sidekiq_4.gemfile
+  - gemfiles/sidekiq_3.gemfile
+  - gemfiles/sidekiq_2.gemfile
+before_install:
+  - gem update bundler
