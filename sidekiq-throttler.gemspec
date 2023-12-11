@@ -19,7 +19,7 @@ Gem::Specification.new do |gem|
   gem.require_paths = %w(lib)
 
   gem.add_dependency 'activesupport'
-  gem.add_dependency 'sidekiq', '>= 2.5', '< 5.0'
+  gem.add_dependency 'sidekiq', '>= 2.5', '< 6.0'
 
   gem.add_development_dependency 'growl'
   gem.add_development_dependency 'guard'
